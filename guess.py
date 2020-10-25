@@ -18,8 +18,8 @@ def guess_poke(url: str):
     layer = img_dark
     img_backup.paste(layer, (350, 300), mask=layer)
     img_backup.save(b, format='jpeg')
-    img_send = Image.open(b)
-    return img_send
+    b.seek(0)
+    return b
 
 
 if __name__ == "__main__":

@@ -38,8 +38,13 @@ async def spotted(ctx):
 async def guess(ctx):
     """Good ol' guess the pokemon
     """
-    msg = await ctx.send(guess_poke(
-        'https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/240/microsoft/209/reversed-hand-with-middle-finger-extended_1f595.png'))
+    await ctx.send("Time for guess the pokemon!")
+    msg = await ctx.send(file=discord.File(
+        fp=guess_poke(
+        'https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/240/microsoft/209/reversed-hand-with-middle-finger-extended_1f595.png'),
+        filename='image.jpeg'
+        )
+    )
 
     def check(reaction, user):
         return reaction.message.id == msg.id and user != client.user and str(reaction.emoji) == '🖕'
@@ -99,7 +104,7 @@ async def spawn():
             trainers[user.id].append('🖕')  # This will probably be replaced with sth from the json file
             print(trainers)
         else:
-            await reaction.message.channel.send('Oops, it looks like you\'r not a trainer yet, and thus not qualified'
+            await reaction.message.channel.send('Oops, it looks like you\'re not a trainer yet, and thus not qualified '
                                                 'to catch this emojimon. Join the club using new_trainer command.')
     except asyncio.TimeoutError:
         await msg.channel.send('The pokemon slipped away')
