@@ -22,18 +22,22 @@ async def on_ready():
 
 @client.command()
 async def begin_hunt(ctx):
+    """Does exactly what it says: starting the spawn loop
+    """
     spawn_loop.start()
 
 
 @client.command()
 async def spotted(ctx):
-    """A testing function to make sure bot is working as intended
+    """A testing function for spawning to make sure bot is working as intended
     """
     await spawn()
 
 
 @client.command()
 async def guess(ctx):
+    """Good ol' guess the pokemon
+    """
     msg = await ctx.send(guess_poke(
         'https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/240/microsoft/209/reversed-hand-with-middle-finger-extended_1f595.png'))
 
@@ -49,6 +53,8 @@ async def guess(ctx):
 
 @client.command()
 async def new_trainer(ctx):
+    """Adds new trainer to the game
+    """
     global trainers
     trainers[ctx.message.author.id] = []
     await ctx.send(f'Welcome to the club, starts by catching emojimons as they spawn randomly')
@@ -56,6 +62,8 @@ async def new_trainer(ctx):
 
 @tasks.loop(seconds=10)
 async def spawn_loop():
+    """The loop coroutine for spawning, it will have a chance of 1/6 every 10 seconds
+    """
     rand = random.randint(1, 6)
     if rand == 6:
         await spawn()
