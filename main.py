@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 from discord.ext import tasks
+from discord.utils import get
 import asyncio
 import random
 from guess import guess_poke
@@ -63,6 +64,8 @@ async def new_trainer(ctx):
     global trainers
     trainers[ctx.message.author.id] = []
     await ctx.send(f'Welcome to the club, starts by catching emojimons as they spawn randomly')
+    role = discord.utils.get(ctx.message.guild.roles, name='Trainer')
+    await ctx.message.author.add_roles(role)
 
 
 @tasks.loop(seconds=10)
@@ -96,10 +99,11 @@ async def spawn():
     def check(reaction, user):
         return reaction.message.id == msg.id and user != client.user
 
+    role = discord.utils.get(msg.guild.roles, name='Trainer')
     try:
         reaction, user = await client.wait_for('reaction_add', timeout=5.0, check=check)
-        await user.send('The pokemon got away')
-        if user.id in trainers:
+        if role in user.roles:
+            await user.send('You got the pokemon, you\'re now responsible for its taxes')
             await channel.send(f'{user.name} has caught the pokemon')
             trainers[user.id].append('🖕')  # This will probably be replaced with sth from the json file
             print(trainers)
