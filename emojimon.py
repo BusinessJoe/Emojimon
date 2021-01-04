@@ -2,6 +2,15 @@ import random
 import json
 
 
+class move:
+    moveName = ""
+    moveType = ""
+    movePower = 0
+    moveAccuracy = 0
+    moveEffect = ""
+    moveHitType = ""
+
+
 class Emoji:
     # basic information
     name = ""

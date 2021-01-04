@@ -5,9 +5,10 @@ from discord.utils import get
 import asyncio
 import random
 from image_edit import guess_poke, battle_screen
+from battle_calc import damage_calculation
 import pickle
 import time
-from emojimon import Emoji
+from emojimon import Emoji, move
 
 TOKEN = ""
 
@@ -86,7 +87,7 @@ async def spawn_loop():
 
 async def spawn():
     """Responsible for spawning a pokemon. Spawn windows starts every 10 seconds for testing purposes.
-    todo: implement pickle instead of json to gain access to the object instead of its list of attributes
+    todo: implement radar chart from matplotlib to generate visuals on emojimon's powers
     """
     global trainers
     global emoji_list
@@ -125,6 +126,13 @@ async def spawn():
 
 @client.command()
 async def battle_challenge(ctx, target):
+    """
+    Command for challenging another user
+    :param ctx: context parameter
+    :param target: the challenged user
+    todo: Get emoji index from player
+    todo: Restrict player from challenging self (unless if that player is me, because bug testing duh)
+    """
     if ctx.author == client.user:  # In the unlikely situation that the message is written by a bot
         return
 
@@ -133,7 +141,7 @@ async def battle_challenge(ctx, target):
     except:
         await ctx.send("Target is not valid, make sure you are mentioning them with '@'")
 
-    if user == client.user:
+    if user == client.user:  # If the challenger is dumb enough to challenge a bot
         await ctx.send("No you dumbass I'm the referee not the player")
         return
 
@@ -145,7 +153,7 @@ async def battle_challenge(ctx, target):
 
     answer = await select_one_from_list(user, user, responses, emojis=reactions, selection_message=msg)
     if answer == responses[0]:
-        await battle(ctx, ctx.author, user, 0, 1)
+        await battle(ctx, ctx.author, user, 1411, 1412)
     elif answer == responses[1]:
         await ctx.send(f'{user.name} has turned down the challenge.')
 
@@ -157,7 +165,9 @@ async def battle(ctx, challenger, challenged, index1, index2):
     :param challenger, challenged: respective players in the battle
     :param index1: Index of challenger's emoji
     :param index2: Index of challenged emoji
-    :return:
+    todo: Can I somehow make this a looping coroutine? Not even sure if doing that would be beneficial
+    todo: Basically the whole battle sequence
+    todo: Reference the emoji from the player's inventory instead of the index, as well as add trainer pass for battle
     """
     global emoji_list
     msg = await ctx.send(f"Battle's starting! {challenger.name} has summoned {emoji_list[index1].name}")
@@ -166,8 +176,43 @@ async def battle(ctx, challenger, challenged, index1, index2):
     await msg.delete()
     await image.delete()
 
-    msg = await ctx.send(f"{challenged.name} has summoned {emoji_list[index2].name}")
+    msg = await ctx.send(f"{challenged.name} has summoned {emoji_list[index2].name}")  # Referencing emoji from index
     image = await ctx.send(file=discord.File(fp=battle_screen(index1, index2), filename='image.jpeg'))
+    time.sleep(3)
+    await msg.delete()
+    await image.delete()
+
+    challenger_hp = emoji_list[index1].maxHp
+    challenged_hp = emoji_list[index2].maxHp
+
+    while True:
+        msg = await ctx.send(f"{emoji_list[index1].name} used Legendary Laser")
+        image = await ctx.send(file=discord.File(fp=battle_screen(index1, index2, "gun1"), filename='Image.jpeg'))
+        calc = damage_calculation(emoji_list[index1], emoji_list[index2], 'Legendary Laser')
+        challenged_hp -= calc[1]  # This is the damage dealt
+        time.sleep(3)
+        await msg.delete()
+        msg = await ctx.send(f"The move was {calc[0]}, dealt {calc[1]} damage. {emoji_list[index2].name} has {challenged_hp} hp left")
+        if challenged_hp <= 0:
+            await ctx.send(f'{emoji_list[index2].name} has fallen into depression')
+            break
+        time.sleep(3)
+        await msg.delete()
+        await image.delete()
+
+        msg = await ctx.send(f"{emoji_list[index2].name} used Legendary Sword")
+        image = await ctx.send(file=discord.File(fp=battle_screen(index1, index2, "knife2"), filename='Image.jpeg'))
+        calc = damage_calculation(emoji_list[index2], emoji_list[index1], 'Legendary Sword')
+        challenger_hp -= calc[1]
+        time.sleep(3)
+        await msg.delete()
+        msg = await ctx.send(f"The move was {calc[0]}, dealt {calc[1]} damage. {emoji_list[index1].name} has {challenger_hp} hp left")
+        if challenger_hp <= 0:
+            await ctx.send(f'{emoji_list[index1].name} has fallen into depression')
+            break
+        time.sleep(3)
+        await msg.delete()
+        await image.delete()
 
 
 async def select_one_from_list(messageable, author, lst, emojis=None, selection_message=None):
