@@ -39,7 +39,15 @@ def add_item():
 def check_data():
     with open("CompleteEmojiDex.dat", "rb") as f:
         data_list = pickle.load(f)
-    print(data_list[1412].name)
+
+    with open("CompleteMoveList.dat", "rb") as f:
+        move_list = pickle.load(f)
+
+    data_list[1411].move2 = "Cassises"
+    data_list[1412].move2 = "Dilled"
+
+    with open("CompleteEmojiDex.dat", "wb") as f:
+        pickle.dump(data_list, f)
 
 
 def pickle_2_json():

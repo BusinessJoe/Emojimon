@@ -132,19 +132,17 @@ async def battle_challenge(ctx, target):
     :param target: the challenged user
     todo: Get emoji index from player
     todo: Restrict player from challenging self (unless if that player is me, because bug testing duh)
+    todo: Add restrictions to ability usage
     """
-    if ctx.author == client.user:  # In the unlikely situation that the message is written by a bot
-        return
-
     try:
-        user = client.get_user(int(target[3:-1]))
+        user = client.get_user(int(''.join([i for i in target if i.isdigit()])))
     except:
         await ctx.send("Target is not valid, make sure you are mentioning them with '@'")
+        return
 
     if user == client.user:  # If the challenger is dumb enough to challenge a bot
         await ctx.send("No you dumbass I'm the referee not the player")
         return
-
     await ctx.send(f"{ctx.author.name} has challenged {user.name} to a battle.")
     msg = await user.send(f'{ctx.author.name} has challenged you to a battle. Do you accept?')
 
@@ -185,28 +183,44 @@ async def battle(ctx, challenger, challenged, index1, index2):
     challenger_hp = emoji_list[index1].maxHp
     challenged_hp = emoji_list[index2].maxHp
 
+    # The list of moves available to each players
+    # Moves are referenced by name, so todo: reference moves in emoji class as actual move object
+    challenger_moves = \
+        [emoji_list[index1].move1, emoji_list[index1].move2, emoji_list[index1].move3, emoji_list[index1].move4]
+    challenged_moves = \
+        [emoji_list[index2].move1, emoji_list[index2].move2, emoji_list[index2].move3, emoji_list[index2].move4]
+
     while True:
-        msg = await ctx.send(f"{emoji_list[index1].name} used Legendary Laser")
+        move_chosen = await select_one_from_list(ctx, challenger, challenger_moves)
+        msg = await ctx.send(f"{emoji_list[index1].name} used {move_chosen}")
         image = await ctx.send(file=discord.File(fp=battle_screen(index1, index2, "gun1"), filename='Image.jpeg'))
-        calc = damage_calculation(emoji_list[index1], emoji_list[index2], 'Legendary Laser')
+        calc = damage_calculation(emoji_list[index1], emoji_list[index2], move_chosen)
         challenged_hp -= calc[1]  # This is the damage dealt
+
         time.sleep(3)
         await msg.delete()
-        msg = await ctx.send(f"The move was {calc[0]}, dealt {calc[1]} damage. {emoji_list[index2].name} has {challenged_hp} hp left")
+        msg = await ctx.send(
+            f"The move was {calc[0]}, dealt {calc[1]} damage. {emoji_list[index2].name} has {challenged_hp} hp left"
+        )
         if challenged_hp <= 0:
             await ctx.send(f'{emoji_list[index2].name} has fallen into depression')
             break
         time.sleep(3)
-        await msg.delete()
+        await msg.delete()  # Delete message to avoid spamming chat
         await image.delete()
 
-        msg = await ctx.send(f"{emoji_list[index2].name} used Legendary Sword")
+        # Challenged trainer's turn
+        move_chosen = await select_one_from_list(ctx, challenged, challenged_moves)
+        msg = await ctx.send(f"{emoji_list[index2].name} used {move_chosen}")
+        # No need for a second move_chosen cuz it's turn_based anyways
         image = await ctx.send(file=discord.File(fp=battle_screen(index1, index2, "knife2"), filename='Image.jpeg'))
-        calc = damage_calculation(emoji_list[index2], emoji_list[index1], 'Legendary Sword')
+        calc = damage_calculation(emoji_list[index2], emoji_list[index1], move_chosen)
         challenger_hp -= calc[1]
         time.sleep(3)
         await msg.delete()
-        msg = await ctx.send(f"The move was {calc[0]}, dealt {calc[1]} damage. {emoji_list[index1].name} has {challenger_hp} hp left")
+        msg = await ctx.send(
+            f"The move was {calc[0]}, dealt {calc[1]} damage. {emoji_list[index1].name} has {challenger_hp} hp left"
+        )
         if challenger_hp <= 0:
             await ctx.send(f'{emoji_list[index1].name} has fallen into depression')
             break
@@ -239,7 +253,7 @@ async def select_one_from_list(messageable, author, lst, emojis=None, selection_
 
     if selection_message is None:
         # concatenate each line into a single message before sending
-        messages = []
+        messages = [f"{author.name}, choose the following:"]
         for emoji, item in zip(emojis, lst):
             messages.append(f'{emoji} {item}')
         selection_message = await messageable.send('\n'.join(messages))

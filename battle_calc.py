@@ -10,6 +10,14 @@ with open("TypeChart2dArray.dat", "rb") as f:
 
 
 def damage_calculation(attackingEmoji: Emoji, defendingEmoji: Emoji, movesName):
+    """
+    Calculate damage for a battle
+    :param attackingEmoji:
+    :param defendingEmoji:
+    :param movesName:
+    :return: the effectiveness of the attack, as well as damage output
+    todo: rebalance
+    """
     global moveListTemp
     global newData
 
