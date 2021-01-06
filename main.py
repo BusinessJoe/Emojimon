@@ -8,10 +8,11 @@ from image_edit import guess_poke, battle_screen
 from battle_calc import damage_calculation
 import pickle
 import time
+import os
 from datetime import datetime
 from emojimon import Emoji, move, Trainer
 
-TOKEN = ""
+TOKEN = os.environ["DISCORD_TOKEN"]
 
 client = commands.Bot(command_prefix='!em')
 emoji_list = []
