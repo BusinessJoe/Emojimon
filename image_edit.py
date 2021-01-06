@@ -5,7 +5,7 @@ import requests
 
 def battle_screen(index1, index2=None, effect=None):
     b = BytesIO()
-    path1 = f'C:\\Users\\ADMIN\\PycharmProjects\\Emojimon\\Emojis\\Emoji{index1}.png'
+    path1 = f'Emojis/Emoji{index1}.png'
     stadium = Image.open('poke_stadium.jpg')
     img1 = Image.open(path1)
     img1 = img1.resize((400, 400))
@@ -13,7 +13,7 @@ def battle_screen(index1, index2=None, effect=None):
     background.paste(img1, (300, 300), img1)
 
     try:
-        path2 = f'C:\\Users\\ADMIN\\PycharmProjects\\Emojimon\\Emojis\\Emoji{index2}.png'
+        path2 = f'Emojis/Emoji{index2}.png'
         img2 = Image.open(path2)
         img2 = img2.resize((400, 400))
         background.paste(img2, (1250, 300), img2)
@@ -23,7 +23,7 @@ def battle_screen(index1, index2=None, effect=None):
     # Check if there are any effects, rn they include: knife, squirt and gun.
     # If the number after is 1, the challenger on the left is carrying out the attack.
     try:
-        effect_img = Image.open(f'C:\\Users\\ADMIN\\PycharmProjects\\Emojimon\\Emojis\\{effect[:-1]}.png')
+        effect_img = Image.open(f'Emojis/{effect[:-1]}.png')
         if effect[-1:] == "2":
             print('reversed')
             effect_img = effect_img.transpose(method=Image.FLIP_LEFT_RIGHT)
