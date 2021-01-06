@@ -8,13 +8,16 @@ from image_edit import guess_poke, battle_screen
 from battle_calc import damage_calculation
 import pickle
 import time
-from emojimon import Emoji, move
+from datetime import datetime
+from emojimon import Emoji, move, Trainer
 
 TOKEN = ""
 
 client = commands.Bot(command_prefix='!em')
 emoji_list = []
-trainers = {}
+trainer_list = []
+trainer_id_list = []
+local_time = ''
 
 
 @client.event
@@ -22,9 +25,19 @@ async def on_ready():
     """Tells me the bot is now ready to start using. Start the spawn coroutine loop.
     """
     global emoji_list
+    global trainer_list
+    global trainer_id_list
+    global local_time
+
     print("A wild game idea has appeared")
     with open("CompleteEmojiDex.dat", "rb") as f:
         emoji_list = pickle.load(f)
+
+    with open("TrainerList.dat", "rb") as f:
+        trainer_list = pickle.load(f)
+
+    trainer_id_list = [i.id for i in trainer_list]
+    local_time = datetime.now()
 
 
 @client.command()
@@ -48,13 +61,14 @@ async def guess(ctx):
     await ctx.send("Time for guess the pokemon!")
     msg = await ctx.send(file=discord.File(
         fp=guess_poke(
-        'https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/240/microsoft/209/reversed-hand-with-middle-finger-extended_1f595.png'),
+            'https://emojipedia-us.s3.dualstack.us-west-1.amazonaws.com/thumbs/240/microsoft/209/reversed-hand-with-middle-finger-extended_1f595.png'),
         filename='image.jpeg'
-        )
+    )
     )
 
     def check(reaction, user):
         return reaction.message.id == msg.id and user != client.user and str(reaction.emoji) == '🖕'
+
     # This portion will later be change so it can work on all supported emojis
     try:
         reaction, user = await client.wait_for('reaction_add', timeout=10.0, check=check)
@@ -134,6 +148,28 @@ async def battle_challenge(ctx, target):
     todo: Restrict player from challenging self (unless if that player is me, because bug testing duh)
     todo: Add restrictions to ability usage
     """
+    global trainer_id_list
+    global trainer_list
+    global emoji_list
+    global local_time
+
+    reactions = ["👍", "👎"]
+    responses = ["yes", "no"]
+
+    if ctx.author.id not in trainer_id_list:
+        msg = await ctx.send(f"{ctx.author.name}, you are not currently a trainer, do you want to join?")
+        answer = await select_one_from_list(ctx, ctx.author, responses, reactions, selection_message=msg)
+        if answer == "yes":
+            trainer_list.append(Trainer(ctx.author.name, ctx.author.id, emoji_list[0], local_time.strftime("%x")))
+            trainer_id_list.append(ctx.author.id)
+            with open('TrainerList.dat', 'wb') as f:  # AUTOSAVES!!!
+                pickle.dump(trainer_list, f)
+
+            await ctx.send(f"Welcome to the club {ctx.author.name}. Let's get going with your challenge.")
+        else:
+            await ctx.send(f'Then why tf did you even challenge?')
+            return
+
     try:
         user = client.get_user(int(''.join([i for i in target if i.isdigit()])))
     except:
@@ -143,20 +179,33 @@ async def battle_challenge(ctx, target):
     if user == client.user:  # If the challenger is dumb enough to challenge a bot
         await ctx.send("No you dumbass I'm the referee not the player")
         return
+
+    if user.id not in trainer_id_list:
+        msg = await user.send(f"{user.name}, you are not currently a trainer, do you want to join?")
+        answer = await select_one_from_list(user, user, responses, reactions, selection_message=msg)
+        if answer == "yes":
+            trainer_list.append(Trainer(user.name, user.id, emoji_list[0], local_time.strftime("%x")))
+            trainer_id_list.append(user.id)
+            with open('TrainerList.dat', 'wb') as f:  # AUTOSAVES!!!
+                pickle.dump(trainer_list, f)
+            await user.send(f"Welcome to the club {user.name}.")
+            await ctx.send(f"Welcome to the club {user.name}.")
+        else:
+            await user.send(f'Alright then, guess not')
+            await ctx.send(f'{user.name} cannot accept the challenge as he/she/they/pronoun is not a trainer.')
+            return
+
     await ctx.send(f"{ctx.author.name} has challenged {user.name} to a battle.")
     msg = await user.send(f'{ctx.author.name} has challenged you to a battle. Do you accept?')
 
-    reactions = ["👍", "👎"]
-    responses = ["yes", "no"]
-
     answer = await select_one_from_list(user, user, responses, emojis=reactions, selection_message=msg)
     if answer == responses[0]:
-        await battle(ctx, ctx.author, user, 1411, 1412)
+        await battle(ctx, ctx.author, user)
     elif answer == responses[1]:
         await ctx.send(f'{user.name} has turned down the challenge.')
 
 
-async def battle(ctx, challenger, challenged, index1, index2):
+async def battle(ctx, challenger, challenged):
     """
     Battle Sequence
     :param ctx: context parameter
@@ -168,42 +217,54 @@ async def battle(ctx, challenger, challenged, index1, index2):
     todo: Reference the emoji from the player's inventory instead of the index, as well as add trainer pass for battle
     """
     global emoji_list
-    msg = await ctx.send(f"Battle's starting! {challenger.name} has summoned {emoji_list[index1].name}")
+    global trainer_list
+    global trainer_id_list
+
+    challenger_emoji = trainer_list[trainer_id_list.index(challenger.id)].team[0]
+    challenged_emoji = trainer_list[trainer_id_list.index(challenged.id)].team[0]
+
+    index1 = challenger_emoji.emojiNumber
+    index2 = challenged_emoji.emojiNumber
+
+    msg = await ctx.send(f"Battle's starting! {challenger.name} has summoned {challenger_emoji.name}")
     image = await ctx.send(file=discord.File(fp=battle_screen(index1), filename='image.jpeg'))
     time.sleep(3)
     await msg.delete()
     await image.delete()
 
-    msg = await ctx.send(f"{challenged.name} has summoned {emoji_list[index2].name}")  # Referencing emoji from index
-    image = await ctx.send(file=discord.File(fp=battle_screen(index1, index2), filename='image.jpeg'))
+    msg = await ctx.send(f"{challenged.name} has summoned {challenged_emoji.name}")  # Referencing emoji from index
+    image = await ctx.send(
+        file=discord.File(fp=battle_screen(index1, index2),
+                          filename='image.jpeg')
+        )
     time.sleep(3)
     await msg.delete()
     await image.delete()
 
-    challenger_hp = emoji_list[index1].maxHp
-    challenged_hp = emoji_list[index2].maxHp
+    challenger_hp = challenger_emoji.maxHp
+    challenged_hp = challenged_emoji.maxHp
 
     # The list of moves available to each players
     # Moves are referenced by name, so todo: reference moves in emoji class as actual move object
     challenger_moves = \
-        [emoji_list[index1].move1, emoji_list[index1].move2, emoji_list[index1].move3, emoji_list[index1].move4]
+        [challenger_emoji.move1, challenger_emoji.move2, challenger_emoji.move3, challenger_emoji.move4]
     challenged_moves = \
-        [emoji_list[index2].move1, emoji_list[index2].move2, emoji_list[index2].move3, emoji_list[index2].move4]
+        [challenged_emoji.move1, challenged_emoji.move2, challenged_emoji.move3, challenged_emoji.move4]
 
     while True:
         move_chosen = await select_one_from_list(ctx, challenger, challenger_moves)
-        msg = await ctx.send(f"{emoji_list[index1].name} used {move_chosen}")
+        msg = await ctx.send(f"{challenger_emoji.name} used {move_chosen}")
         image = await ctx.send(file=discord.File(fp=battle_screen(index1, index2, "gun1"), filename='Image.jpeg'))
-        calc = damage_calculation(emoji_list[index1], emoji_list[index2], move_chosen)
+        calc = damage_calculation(challenger_emoji, challenged_emoji, move_chosen)
         challenged_hp -= calc[1]  # This is the damage dealt
 
         time.sleep(3)
         await msg.delete()
         msg = await ctx.send(
-            f"The move was {calc[0]}, dealt {calc[1]} damage. {emoji_list[index2].name} has {challenged_hp} hp left"
+            f"The move was {calc[0]}, dealt {calc[1]} damage. {challenged_emoji.name} has {challenged_hp} hp left"
         )
         if challenged_hp <= 0:
-            await ctx.send(f'{emoji_list[index2].name} has fallen into depression')
+            await ctx.send(f'{challenged_emoji.name} has fallen into depression')
             break
         time.sleep(3)
         await msg.delete()  # Delete message to avoid spamming chat
@@ -211,18 +272,18 @@ async def battle(ctx, challenger, challenged, index1, index2):
 
         # Challenged trainer's turn
         move_chosen = await select_one_from_list(ctx, challenged, challenged_moves)
-        msg = await ctx.send(f"{emoji_list[index2].name} used {move_chosen}")
+        msg = await ctx.send(f"{challenged_emoji.name} used {move_chosen}")
         # No need for a second move_chosen cuz it's turn_based anyways
         image = await ctx.send(file=discord.File(fp=battle_screen(index1, index2, "knife2"), filename='Image.jpeg'))
-        calc = damage_calculation(emoji_list[index2], emoji_list[index1], move_chosen)
+        calc = damage_calculation(challenged_emoji, challenger_emoji, move_chosen)
         challenger_hp -= calc[1]
         time.sleep(3)
         await msg.delete()
         msg = await ctx.send(
-            f"The move was {calc[0]}, dealt {calc[1]} damage. {emoji_list[index1].name} has {challenger_hp} hp left"
+            f"The move was {calc[0]}, dealt {calc[1]} damage. {challenger_emoji.name} has {challenger_hp} hp left"
         )
         if challenger_hp <= 0:
-            await ctx.send(f'{emoji_list[index1].name} has fallen into depression')
+            await ctx.send(f'{challenger_emoji.name} has fallen into depression')
             break
         time.sleep(3)
         await msg.delete()

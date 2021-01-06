@@ -1,6 +1,11 @@
 import pickle
 import json
-from emojimon import Emoji, move
+from emojimon import Emoji, move, Trainer
+
+
+"""
+This whole file is dedicated to changing values in the files
+"""
 
 
 def move_load(string: str):
@@ -14,23 +19,14 @@ def add_item():
         data_list = pickle.load(f)
 
     laser = move()
-    laser.moveName = "Legendary Laser"
-    laser.moveType = "Gamer"
-    laser.movePower = 150
+    laser.moveName = "Gentle Roast"
+    laser.moveType = "Australian"
+    laser.movePower = 15
     laser.moveAccuracy = 0.98
-    laser.moveEffect = "E5"
+    laser.moveEffect = "Z0"
     laser.moveHitType = "Emotional"
 
-    sword = move()
-    sword.moveName = "Legendary Sword"
-    sword.moveType = "Sheep"
-    sword.movePower = 150
-    sword.moveAccuracy = 0.98
-    sword.moveEffect = "F5"
-    sword.moveHitType = "Physical"
-
     data_list.append(laser)
-    data_list.append(sword)
 
     with open("CompleteMoveList.dat", "wb") as f:
         pickle.dump(data_list, f)
@@ -43,11 +39,10 @@ def check_data():
     with open("CompleteMoveList.dat", "rb") as f:
         move_list = pickle.load(f)
 
-    data_list[1411].move2 = "Cassises"
-    data_list[1412].move2 = "Dilled"
+    with open("TrainerList.dat", 'rb') as f:
+        trainer_list = pickle.load(f)
 
-    with open("CompleteEmojiDex.dat", "wb") as f:
-        pickle.dump(data_list, f)
+    print(str(trainer_list[0]) == 'BasicallyOK')
 
 
 def pickle_2_json():

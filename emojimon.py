@@ -1,5 +1,5 @@
 import random
-import json
+import pickle
 
 
 class move:
@@ -65,9 +65,6 @@ class Emoji:
     move3 = ""
     move4 = ""
 
-    movePool = []
-    moveLearnDictionary = {}
-
     def __init__(self, indexNum):
         self.emojiNumber = indexNum
         self.imageReference = "Emoji" + indexNum.__str__()
@@ -103,7 +100,8 @@ class Emoji:
         self.speedStat = int(self.level * self.speGain * self.speGene)
         self.dodgeChance = random.uniform(1.0, 5.0)
 
-        self.moveLearnDictionary = MoveListDict()
+        self.moveLearnDictionary = {}
+        self.movePool
 
     def recalculateStats(self):
         self.neededXp = int(self.level * 100 * self.levelingMod)
@@ -115,3 +113,95 @@ class Emoji:
         self.specialDefStat = int(self.level * self.speDefGain * self.speDefGene)
         self.speedStat = int(self.level * self.speGain * self.speGene)
 
+    def level_up(self):
+        """
+        Deals with leveling up the emoji, involving raise level by one, as well as maybe improve stats
+        and learn new moves
+        """
+        self.level += 1
+        for move_name in self.moveLearnDictionary.items():
+            if move_name[0] not in self.movePool:
+                if move_name[1] <= self.level:
+                    self.movePool.append(move_name[0])
+
+
+class Trainer:
+    def __init__(self, name, discord_id: int, beginner_emoji: Emoji, date_started: str):
+        self.name = name
+        self.beginner_emoji = beginner_emoji
+        self.team = [self.beginner_emoji, None, None, None]
+        self.achievements = []
+        self.gym_badges = []
+        self.wins = 0
+        self.losses = 0
+        self.emojis_caught = 0
+        self.date_started = date_started
+        self.id = discord_id
+        self.role = 'player'  # If it is the name of one of the emoji type, the person is a gym leader
+
+    def __str__(self):
+        return self.name
+
+    def add_w(self):
+        """
+        Any win adds should be through this method to check for achievements
+        :returns achievement if you earned any, if not it returns None
+        """
+        achievement = None
+        self.wins += 1
+        if self.wins == 10:
+            self.achievements.append("All that Ws")
+            achievement = "All that Ws"
+        if self.wins == 50:
+            self.achievements.append("Apex Emoji")
+            achievement = "Apex Emoji"
+        return achievement
+
+    def add_l(self):
+        """
+        Any loss adds should be through this method to check for achievements
+        :returns achievement if you earned any, if not it returns None
+        """
+        achievement = None
+        self.losses += 1
+        if self.losses == 10:
+            self.achievements.append("The bane of emojis")
+            achievement = "The bane of emojis"
+        if self.losses == 50:
+            self.achievements.append("Did it for the achievement")
+            achievement = "Did it for the achievement"
+
+        return achievement
+
+    def add_team(self, new_emoji: Emoji):
+        """
+        Add an emoji to team
+        :returns True if team is full, False if it isn't, as well as achievement if it was achieved
+        """
+        achievement = None
+        self.emojis_caught += 1
+
+        if self.emojis_caught == 10:
+            self.achievements.append("Emoji Collector")
+            achievement = "Emoji Collector"
+        if self.emojis_caught == 20:
+            self.achievements.append("Emoji Hoarder")
+            achievement = "Emoji Hoarder"
+        if self.emojis_caught == 50:
+            self.achievements.append("Emoji Trafficking")
+            achievement = "Emoji Trafficking"
+
+        for i in range(len(self.team)):
+            if self.team[i] is None:
+                self.team[i] = new_emoji
+                return False, achievement
+
+        return True, achievement
+
+
+if __name__ == '__main__':
+    with open('CompleteEmojiDex.dat', 'rb') as f:
+        data_list = pickle.load(f)
+
+    data_list[1412].level_up()
+    print(data_list[1412].movePool, data_list[1412].level)
