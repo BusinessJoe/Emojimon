@@ -229,7 +229,7 @@ async def battle(ctx, challenger, challenged):
 
     msg = await ctx.send(f"Battle's starting! {challenger.name} has summoned {challenger_emoji.name}")
     image = await ctx.send(file=discord.File(fp=battle_screen(index1), filename='image.jpeg'))
-    time.sleep(3)
+    await asyncio.sleep(3)
     await msg.delete()
     await image.delete()
 
@@ -238,7 +238,7 @@ async def battle(ctx, challenger, challenged):
         file=discord.File(fp=battle_screen(index1, index2),
                           filename='image.jpeg')
         )
-    time.sleep(3)
+    await asyncio.sleep(3)
     await msg.delete()
     await image.delete()
 
@@ -259,7 +259,7 @@ async def battle(ctx, challenger, challenged):
         calc = damage_calculation(challenger_emoji, challenged_emoji, move_chosen)
         challenged_hp -= calc[1]  # This is the damage dealt
 
-        time.sleep(3)
+        await asyncio.sleep(3)
         await msg.delete()
         msg = await ctx.send(
             f"The move was {calc[0]}, dealt {calc[1]} damage. {challenged_emoji.name} has {challenged_hp} hp left"
@@ -267,7 +267,7 @@ async def battle(ctx, challenger, challenged):
         if challenged_hp <= 0:
             await ctx.send(f'{challenged_emoji.name} has fallen into depression')
             break
-        time.sleep(3)
+        await asyncio.sleep(3)
         await msg.delete()  # Delete message to avoid spamming chat
         await image.delete()
 
@@ -278,7 +278,7 @@ async def battle(ctx, challenger, challenged):
         image = await ctx.send(file=discord.File(fp=battle_screen(index1, index2, "knife2"), filename='Image.jpeg'))
         calc = damage_calculation(challenged_emoji, challenger_emoji, move_chosen)
         challenger_hp -= calc[1]
-        time.sleep(3)
+        await asyncio.sleep(3)
         await msg.delete()
         msg = await ctx.send(
             f"The move was {calc[0]}, dealt {calc[1]} damage. {challenger_emoji.name} has {challenger_hp} hp left"
@@ -286,7 +286,7 @@ async def battle(ctx, challenger, challenged):
         if challenger_hp <= 0:
             await ctx.send(f'{challenger_emoji.name} has fallen into depression')
             break
-        time.sleep(3)
+        await asyncio.sleep(3)
         await msg.delete()
         await image.delete()
 
